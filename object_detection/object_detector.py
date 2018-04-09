@@ -1,14 +1,3 @@
-
-# coding: utf-8
-
-# # Object Detection Demo
-# Welcome to the object detection inference walkthrough!  This notebook will walk you step by step through the process of using a pre-trained model to detect objects in an image.
-
-# # Imports
-
-# In[15]:
-
-
 import numpy as np
 import os
 import six.moves.urllib as urllib
