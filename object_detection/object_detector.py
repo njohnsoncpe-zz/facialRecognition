@@ -27,7 +27,7 @@ if (hoststr == 0 || hoststr == 1)
 else
 """
 
-capture = cv2.VideoCapture('http://' + hoststr + '/video')
+capture = cv2.VideoCapture(0)
 
 sys.path.append("..")
 sys.path
@@ -49,13 +49,13 @@ PATH_TO_LABELS = os.path.join('data', 'mscoco_label_map.pbtxt')
 
 NUM_CLASSES = 90
 
-opener = urllib.request.URLopener()
-opener.retrieve(DOWNLOAD_BASE + MODEL_FILE, MODEL_FILE)
-tar_file = tarfile.open(MODEL_FILE)
-for file in tar_file.getmembers():
-		file_name = os.path.basename(file.name)
-		if 'frozen_inference_graph.pb' in file_name:
-				tar_file.extract(file, os.getcwd())
+# opener = urllib.request.URLopener()
+# opener.retrieve(DOWNLOAD_BASE + MODEL_FILE, MODEL_FILE)
+# tar_file = tarfile.open(MODEL_FILE)
+# for file in tar_file.getmembers():
+# 		file_name = os.path.basename(file.name)
+# 		if 'frozen_inference_graph.pb' in file_name:
+# 				tar_file.extract(file, os.getcwd())
 
 detection_graph = tf.Graph()
 with detection_graph.as_default():
@@ -64,20 +64,15 @@ with detection_graph.as_default():
 				serialized_graph = fid.read()
 				od_graph_def.ParseFromString(serialized_graph)
 				tf.import_graph_def(od_graph_def, name='')
-
+# 
 label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
 categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=NUM_CLASSES, use_display_name=True)
 category_index = label_map_util.create_category_index(categories)
 
-def load_image_into_numpy_array(image):
-	(im_width, im_height) = image.size
-	return np.array(image.getdata()).reshape(
-			(im_height, im_width, 3)).astype(np.uint8)
-
-PATH_TO_TEST_IMAGES_DIR = 'test_images'
-TEST_IMAGE_PATHS = [ os.path.join(PATH_TO_TEST_IMAGES_DIR, 'image{}.jpg'.format(i)) for i in range(1, 3) ]
-
-IMAGE_SIZE = (12, 8)
+# def load_image_into_numpy_array(image):
+# 	(im_width, im_height) = image.size
+# 	return np.array(image.getdata()).reshape(
+# 			(im_height, im_width, 3)).astype(np.uint8)
 
 with detection_graph.as_default():
 	with tf.Session(graph=detection_graph) as sess:
