@@ -1,1 +1,7 @@
 object_detection/ssd_mobilenet_v1_coco_11_06_2017.tar.gz
+object_detection/__pycache__
+object_detection/.vscode
+object_detection/dataset_tools
+object_detection/data_decoders
+build
+dist
