@@ -2,7 +2,7 @@
 The goal of this project is to detect Faces in live IP Camera footage. We use Tensorflow as our back end and build off of the
 SSD MobileNet Architecture. Versions using Inception V1/V2 are being explored for higher accuracy.
 
-[Video Exposition](https://youtu.be/b9w8dZt52Mo)
+[Video Exposition](https://youtu.be/-ED7T9X5zcY)
 
 ## Motivation
 We take in a live video stream from a network connected camera and perform image classification on the frames of this video. This video is then sent over LAN to an embedded device for display purposes (i.e. ARM Processor).
