@@ -89,7 +89,7 @@ By taking this approach, we can allow users to explore image classification outp
 ## Project Dependencies
 A full list of dependencies can be found in [env.yml](https://github.com/njohnsoncpe/facialRecognition/blob/master/env.yml). [Anaconda maintains](https://conda.io/docs/commands/env/conda-env-create.html) that an equivalent enviroment to mine can be built using: 
 ```
-conda env -f env.yml -n tf-gpu 
+conda env create -f env.yml -n tf-gpu 
 ```
 I have been unable to independenly verifiy this functionality. If anyone finds success with this method, let me know and I will update this to reflect any new information.
 
