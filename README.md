@@ -23,4 +23,4 @@ Inspired by [TensorFlow Model Zoo](https://github.com/tensorflow/models/blob/mas
 ## License
 MIT License. Provided AS IS.
 
-MIT © [Noah Johnson](njohnsoncpe.github.io)
+MIT © [Noah Johnson](https://njohnsoncpe.github.io)
