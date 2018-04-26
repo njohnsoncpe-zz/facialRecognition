@@ -3,5 +3,8 @@ object_detection/__pycache__
 object_detection/.vscode
 object_detection/dataset_tools
 object_detection/data_decoders
+object_detection/dataset_tools
+object_detection.egg-info
+slim
 build
 dist
