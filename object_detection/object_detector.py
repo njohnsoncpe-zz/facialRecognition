@@ -5,6 +5,7 @@ import argparse
 import multiprocessing
 import numpy as np
 import tensorflow as tf
+from socket import *
 
 
 from utils.app_utils import FPS, WebcamVideoStream
@@ -27,6 +28,9 @@ PATH_TO_CKPT = os.path.join(CWD_PATH, MODEL_NAME, 'frozen_inference_graph.pb')
 PATH_TO_LABELS = os.path.join(CWD_PATH, 'data', 'mscoco_label_map.pbtxt')
 
 NUM_CLASSES = 90
+
+port = 10000
+buf = 1024
 
 # Loading label map
 print(">Loading Label Map")
@@ -87,10 +91,23 @@ def worker(input_q, output_q):
     fps.stop()
     sess.close()
 
+	
+def sendFile(fName, destAddr):
+    s = socket(AF_INET, SOCK_DGRAM)
+    f = open(fName, "rb")
+    data = f.read(buf)
+    while data:
+        if (s.sendto(data, destAddr)):
+            data = f.read(buf)
+
+    f.close()
+    s.close()
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-src', '--source', dest='video_source', type=int, default=0, help='Device index of the camera.')
+    parser.add_argument('-src', '--source', dest='video_source', type=str, default=0, help='Device index or IP addr and port of camera')
+    parser.add_argument('-dst', '--dest', dest='video_dest', type=str, default=0, help='IP addr of destination/server computer.')
     parser.add_argument('-wd', '--width', dest='width', type=int, default=480, help='Width of the frames in the video stream.')
     parser.add_argument('-ht', '--height', dest='height', type=int, default=360, help='Height of the frames in the video stream.')
     parser.add_argument('-nw', '--num-workers', dest='num_workers', type=int, default=5, help='Number of workers.')
@@ -99,12 +116,17 @@ if __name__ == '__main__':
 
     logger = multiprocessing.log_to_stderr()
     logger.setLevel(multiprocessing.SUBWARNING)
+	
+    destAddr = (args.video_dest, port)
 
     input_q = Queue(maxsize=args.queue_size)
     output_q = Queue(maxsize=args.queue_size)
     pool = Pool(args.num_workers, worker, (input_q, output_q))
 
-    video_capture = WebcamVideoStream(src=args.video_source, width=args.width, height=args.height).start()
+    if (args.video_source != 0):
+	video_capture = WebcamVideoStream(src='http://' + args.video_source + '/video', width=args.width, height=args.height).start()
+    else:	
+    	video_capture = WebcamVideoStream(src=args.video_source, width=args.width, height=args.height).start()
     fps = FPS().start()
 
     while True:  # fps._numFrames < 120
@@ -113,7 +135,9 @@ if __name__ == '__main__':
 
         t = time.time()
         #output_rgb = cv2.cvtColor(output_q.get(), cv2.COLOR_RGB2BGR)
-        cv2.imshow('Video', output_q.get())
+        #cv2.imshow('Video', output_q.get())
+	cv2.imwrite("img.jpg", output_q.get())
+	sendFile("img.jpg", destAddr)
         fps.update()
 
         print('[INFO] elapsed time: {:.2f}'.format(time.time() - t))
