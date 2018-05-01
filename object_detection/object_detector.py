@@ -135,23 +135,26 @@ if __name__ == '__main__':
             height = args.height).start()
     fps = FPS().start()
 
-    while True:  # fps._numFrames < 120
-        frame = video_capture.read()
-        input_q.put(frame)
+    try:
+        while True:  # fps._numFrames < 120
+            frame = video_capture.read()
+            input_q.put(frame)
 
-        t = time.time()
-        #output_rgb = cv2.cvtColor(output_q.get(), cv2.COLOR_RGB2BGR)
-        #cv2.imshow('Video', output_q.get())
-        cv2.imwrite("img.jpg", output_q.get())
-        sendFile("img.jpg", destAddr)
-        fps.update()
+            t = time.time()
+            #output_rgb = cv2.cvtColor(output_q.get(), cv2.COLOR_RGB2BGR)
+            #cv2.imshow('Video', output_q.get())
+            cv2.imwrite("img.jpg", output_q.get())
+            sendFile("img.jpg", destAddr)
+            fps.update()
 
-        print('[INFO] elapsed time: {:.2f}'.format(time.time() - t))
+            print('[INFO] elapsed time: {:.2f}'.format(time.time() - t))
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+            #if cv2.waitKey(1) & 0xFF == ord('q'):
+            #    break
+            
+    except KeyboardInterrupt:
+        fps.stop()
 
-    fps.stop()
     print('[INFO] elapsed time (total): {:.2f}'.format(fps.elapsed()))
     print('[INFO] approx. FPS: {:.2f}'.format(fps.fps()))
     pool.terminate()
