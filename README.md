@@ -19,7 +19,7 @@ By taking this approach, we can allow users to explore image classification outp
 
 ## To Do List
 - [ ] Make Install Guide for Linux (CPU Only)
-- [ ] Make Install Guide for Linux (GPU)
+- [X] Make Install Guide for Linux (GPU)
 - [ ] Reduce calls to frozen graph
 - [ ] Rebuild to utilize Intel MKL-DNN, AVX2, JIT
 - [ ] Extract frames from video at system edge
@@ -92,6 +92,20 @@ A full list of dependencies can be found in [env.yml](https://github.com/njohnso
 conda env create -f env.yml -n tf-gpu 
 ```
 I have been unable to independenly verifiy this functionality. If anyone finds success with this method, let me know and I will update this to reflect any new information.
+
+## Running the Project
+To run this project with the DE10-nano   
+- Install Tkinter, numpy, and PIL into the DE10-nano   
+- Install the IPCam Android app onto your Android phone and start the IPCam server   
+- Run the object_detection.py script(using 'activate tf') with arguments:   
+   - IP addr and port of the IPCam server -src='0.0.0.0:8080'    
+   - IP addr of the server, destination computer -dst='0.0.0.0'    
+   - Width of the frames in the video stream --width=480   
+   - Height of the frames in the video stream --height=360   
+   - Number of workers --num-workers=2   
+   - Size of the queue --queue-size=5   
+- Run the receiver.py to listen to the correct port and show the object detection output   
+- Run gui.py to display the object detection stream in a tkinter gui for easy editing   
 
 ## Credits
 Inspired by [TensorFlow Model Zoo](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md)
