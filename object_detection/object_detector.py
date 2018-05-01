@@ -106,7 +106,7 @@ def sendFile(fName, destAddr):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-src', '--source', dest='video_source', type=str, default=0, help='Device index or IP addr and port of camera')
+    parser.add_argument('-src', '--source', dest='video_source', type=str, default='0', help='Device index or IP addr and port of camera')
     parser.add_argument('-dst', '--dest', dest='video_dest', type=str, default=0, help='IP addr of destination/server computer.')
     parser.add_argument('-wd', '--width', dest='width', type=int, default=480, help='Width of the frames in the video stream.')
     parser.add_argument('-ht', '--height', dest='height', type=int, default=360, help='Height of the frames in the video stream.')
@@ -123,10 +123,16 @@ if __name__ == '__main__':
     output_q = Queue(maxsize=args.queue_size)
     pool = Pool(args.num_workers, worker, (input_q, output_q))
 
-    if (args.video_source != 0):
-	video_capture = WebcamVideoStream(src='http://' + args.video_source + '/video', width=args.width, height=args.height).start()
-    else:	
-    	video_capture = WebcamVideoStream(src=args.video_source, width=args.width, height=args.height).start()
+    if (ord(args.video_source) != 48):
+        video_capture = WebcamVideoStream(
+            src = 'http://' + args.video_source + '/video',
+            width = args.width,
+            height = args.height).start()
+    else:
+        video_capture = WebcamVideoStream(
+            src = 0,
+            width = args.width,
+            height = args.height).start()
     fps = FPS().start()
 
     while True:  # fps._numFrames < 120
@@ -136,8 +142,8 @@ if __name__ == '__main__':
         t = time.time()
         #output_rgb = cv2.cvtColor(output_q.get(), cv2.COLOR_RGB2BGR)
         #cv2.imshow('Video', output_q.get())
-	cv2.imwrite("img.jpg", output_q.get())
-	sendFile("img.jpg", destAddr)
+        cv2.imwrite("img.jpg", output_q.get())
+        sendFile("img.jpg", destAddr)
         fps.update()
 
         print('[INFO] elapsed time: {:.2f}'.format(time.time() - t))

@@ -8,3 +8,4 @@ object_detection.egg-info
 slim
 build
 dist
+object_detection/img.jpg

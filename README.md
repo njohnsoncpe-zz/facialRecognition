@@ -19,7 +19,7 @@ By taking this approach, we can allow users to explore image classification outp
 
 ## To Do List
 - [ ] Make Install Guide for Linux (CPU Only)
-- [X] Make Install Guide for Linux (GPU)
+- [ ] Make Install Guide for Linux (GPU)
 - [ ] Reduce calls to frozen graph
 - [ ] Rebuild to utilize Intel MKL-DNN, AVX2, JIT
 - [ ] Extract frames from video at system edge
