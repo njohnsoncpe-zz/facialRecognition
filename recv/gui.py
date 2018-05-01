@@ -3,7 +3,7 @@ import time
 import datetime
 import shutil
 import os
-from tkinter import *
+from Tkinter import *
 from PIL import ImageTk, Image
 recordFlag = 0
 
