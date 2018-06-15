@@ -109,7 +109,7 @@ if __name__ == '__main__':
 
     try:
         while True:  # fps._numFrames < 120
-            frame = video_capture.read()
+            #frame = video_capture.read()
             input_q.put(frame)
 
             t = time.time()
