@@ -1,3 +1,5 @@
+README.md
+setup.py
 datasets/__init__.py
 datasets/build_imagenet_data.py
 datasets/cifar10.py

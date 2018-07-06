@@ -1,12 +1,16 @@
 # From http://www.pyimagesearch.com/2015/12/21/increasing-webcam-fps-with-python-and-opencv/
-
+import os
 import struct
 import six
 import collections
 import cv2
 import datetime
 from threading import Thread
-from matplotlib import colors
+#from matplotlib import colors
+
+# Force UDP Protocol for RTP Transport, this is needed to use the FFMPEG Backend for decoding the h264 stream.
+# If a "nonmatching server reply" error is thrown, then the GSTREAMER backend must be used (with over x10 latency) or FFMPEG must be built from source."
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
 
 
 class FPS:
@@ -42,12 +46,12 @@ class FPS:
 
 
 class WebcamVideoStream:
-    def __init__(self, src, width, height):
+    def __init__(self, src): #, width, height):
         # initialize the video camera stream and read the first frame
         # from the stream
-        self.stream = cv2.VideoCapture(src)
-        self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-        self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+        self.stream = cv2.VideoCapture(src, apiPreference=cv2.CAP_FFMPEG)
+        #self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+        #self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
         (self.grabbed, self.frame) = self.stream.read()
 
         # initialize the variable used to indicate if the thread should
@@ -110,7 +114,8 @@ def standard_colors():
 def color_name_to_rgb():
     colors_rgb = []
     for key, value in colors.cnames.items():
-        colors_rgb.append((key, struct.unpack('BBB', bytes.fromhex(value.replace('#', '')))))
+        colors_rgb.append(
+            (key, struct.unpack('BBB', bytes.fromhex(value.replace('#', '')))))
     return dict(colors_rgb)
 
 
