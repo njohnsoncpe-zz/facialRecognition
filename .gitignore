@@ -30,3 +30,4 @@ object_detection/np_tester.py
 ../.vscode/.ropeproject/config.py
 ../.vscode/.ropeproject/objectdb
 ../.vscode/.ropeproject/
+.vscode/.ropeproject/
