@@ -1,208 +1,228 @@
-# import cv2
-# from threading import Thread
-# import socket, select
-
-# BUFFER_SIZE = 16
-# MSGLEN = 20
+# import socket
+# import threading
+# import select
+# import queue
 
 
-# class DetectionDataSocket:
-#     def __init__(self):
-#         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-#     #def getConnections(self):
+# class ThreadedServer(object):
+#     def __init__(self, host, port):
+#         self.host = host
+#         self.port = port
+#         self.isClientReady = False
+#         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#         self.sock.setblocking(0)
+#         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+#         self.sock.bind((self.host, self.port))
+#         # self.listen()
+#         threading.Thread(target=self.listen).start()
 
+#     def listen(self):
+#         self.sock.listen(5)
+#         print("listening")
+#         inputs = [self.sock]
+#         outputs = []
+#         message_queues = {}
 
-#     def connect(self, port):
-#         port = port
-#         self.server_socket.bind(('', port))
-#         print(">>Listening on port", self.server_socket.getsockname()[1])
-#         read_list = [self.server_socket]
-#         while True:
-#             readable, writeable, errored = select.select(read_list, [], [])
+#         while inputs:
+#             readable, writeable, errored = select.select(
+#                 inputs, outputs, inputs)
+#             print(inputs, outputs)
+
 #             for s in readable:
-#                 if s is self.server_socket:
-#                     client_socket, address = self.server_socket.accept()
-#                     read_list.append(client_socket)
-#                     print("Connection from", address)
-                
+#                 if s is self.sock:
+#                     client, address = self.sock.accept()
+#                     inputs.append(client)
+#                     print("connection from:", address)
+#                     client.settimeout(60)
+#                     client.setblocking(0)
+#                     message_queues[client] = queue.Queue()
+#                 else:
+#                     threading.Thread(target=self.listenToClient,
+#                                      args=(client, address)).start()
 
-#     def send(self, data, dataLen):
-#         totalSent = 0
-#         while totalSent < dataLen:
-#             sent = self.server_socket.send(data[totalSent:])
-#             totalSent += sent
+#             for s in writeable:
+#                 print("writeables:")
+#                 print(writeable)
+#                 try:
+#                     next_msg = message_queues[s].get_nowait()
+#                 except queue.Empty:
+#                     print(">>Output Queue for" + s.getpeername() + 'is empty')
+#                     outputs.remove(s)
+#                 else:
+#                     print("Sending: " + next_msg + "to" + s.getpeername())
+#                     s.send(next_msg)
 
-#     def recv(self):
-#         chunks = []
-#         bytes_recv = 0
-#         while bytes_recv < MSGLEN:
-#             chunk = self.server_socket.recv(min(MSGLEN - bytes_recv, 2048))
-#             if chunk == b'':
-#                 raise RuntimeError("Socket Broke")
-#             chunks.append(chunk)
-#             bytes_recv += len(chunk)
-#         return b''.join(chunks)
+#             for s in errored:
+#                 print('>>handling exceptional condition for' + s.getpeername())
+#                 inputs.remove(s)
+#                 if s in outputs:
+#                     outputs.remove(s)
+#                 s.close()
 
-import errno
-import queue
-import select
+#                 del message_queues[s]
+
+#     def listenToClient(self, client, address):
+#         msg = ''
+#         size = 1024
+#         while True:
+#             print('.')
+#             try:
+#                 data = client.recv(size)
+#                 if data:
+#                     msg += data.decode('utf-8')
+#                     if '\n' in msg:
+#                         command = ''
+#                         command = msg.partition("\n")[0]
+#                         print(command)
+#                         if command == "READY":
+#                             isClientReady = True
+#                             print(">Client is ready")
+#                         msg = ''
+#                     # Set the response to echo back the recieved data
+#                     response = data
+#                     client.send(response)
+#                 else:
+#                     raise error('Client disconnected')
+#             except:
+#                 print('closing clientq')
+#                 client.close()
+#                 return False
+
+
+# if __name__ == "__main__":
+#     while True:
+#         port_num = input("Port? ")
+#         try:
+#             port_num = int(port_num)
+#             break
+#         except ValueError:
+#             pass
+
+#     ThreadedServer('', port_num).listen()
+
 import socket
-import sys
+import threading
+import select
+import queue
+import time
 
-class TCPServer:
-    # Mode specifies the IP address the server socket binds to.
-    # mode can be one of two special values:
-    # localhost -> (127.0.0.1)
-    # public ->    (0.0.0.0)
-    # otherwise, mode is interpreted as an IP address.
-    # port specifies the port that the server socket binds to.
-    # read_callback specifies the function that is called when
-    # the server reads incoming data.
-    # read_callback must be a function that takes three arguments:
-    # The first argument must be a string which represents the IP
-    # address that data was received from.
-    # The second argument must be a queue (a queue.Queue()) which
-    # is a tunnel of data to send to the socket that it receieved from.
-    # The third argument must be data, which is a string of bytes
-    # that the server received.
-    def __init__(self, mode, port, read_callback,
-                 maximum_connections=5, recv_bytes=2048):
-        self.serversocket = ServerSocket(
-            mode, port, read_callback, maximum_connections, recv_bytes
-        )
 
-    def run(self):
-        self.serversocket.run()
+class ThreadingExample(object):
+    """ Threading example class
+    The run() method will be started and it will run in the background
+    until the application exits.
+    """
 
-    @property
-    def ip(self):
-        return self.serversocket.ip
-
-    @property
-    def port(self):
-        return self.serversocket.port
-
-class ServerSocket:
-
-    def __init__(self, mode, port, read_callback, max_connections, recv_bytes):
-        # Handle the socket's mode.
-        # The socket's mode determines the IP address it binds to.
-        # mode can be one of two special values:
-        # localhost -> (127.0.0.1)
-        # public ->    (0.0.0.0)
-        # otherwise, mode is interpreted as an IP address.
-        if mode == "localhost":
-            self.ip = mode
-        elif mode == "public":
-            self.ip = socket.gethostname()
-        else:
-            self.ip = mode
-        # Handle the socket's port.
-        # This should be a high (four-digit) for development.
+    def __init__(self, host, port, interval=1):
+        """ Constructor
+        :type interval: int
+        :param interval: Check interval, in seconds
+        """
+        self.interval = interval
+        self.host = host
         self.port = port
-        if type(self.port) != int:
-            print("port must be an int", file=sys.stderr)
-            raise ValueError
-        # Actually create an INET, STREAMing socket.socket.
-        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        print("socket created")
-        # Make it non-blocking.
-        self._socket.setblocking(0)
-        print('socket nonblocking')
-        # Bind the socket, so it can listen.
-        self._socket.bind((self.ip, self.port))
-        print('socket bound')
-        # Save the callback
-        self.callback = read_callback
-        # Save the number of maximum connections.
-        self._max_connections = max_connections
-        if type(self._max_connections) != int:
-            print("max_connections must be an int", file=sys.stderr)
-            raise ValueError
-        # Save the number of bytes to be received each time we read from
-        # a socket
-        self.recv_bytes = recv_bytes
+        self.isClientReady = False
+        self.isClientConnected = False
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.setblocking(0)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.sock.bind((self.host, self.port))
+        self.inputs = [self.sock]
+        self.outputs = []
+        self.message_queues = {}
+        thread = threading.Thread(target=self.run, args=())
+        thread.daemon = True                            # Daemonize thread
+        thread.start()                                  # Start the execution
 
     def run(self):
-        # Start listening
-        self._socket.listen(self._max_connections)
-        print('listening')
-        # Create a list of readers (sockets that will be read from) and a list
-        # of writers (sockets that will be written to).
-        readers = [self._socket]
-        writers = []
-        # Create a dictionary of queue.Queues for data to be sent.
-        # This dictionary maps sockets to queue.Queue objects
-        queues = dict()
-        # Create a similar dictionary that stores IP addresses.
-        # This dictionary maps sockets to IP addresses
-        IPs = dict()
-        # Now, the main loop.
-        while readers:
-            # Block until a socket is ready for processing.
-            read, write, err = select.select(readers, writers, readers)
-            # Deal with sockets that need to be read from.
-            for sock in read:
-                if sock is self._socket:
-                    # We have a viable connection!
-                    client_socket, client_ip = self._socket.accept()
-                    # Make it a non-blocking connection.
-                    client_socket.setblocking(0)
-                    # Add it to our readers.
-                    readers.append(client_socket)
-                    # Make a queue for it.
-                    queues[client_socket] = queue.Queue()
-                    # Store its IP address.
-                    IPs[client_socket] = client_ip
+        self.sock.listen(5)
+        # print("listening")
+
+        while self.inputs:
+            readable, writeable, errored = select.select(
+                self.inputs, self.outputs, self.inputs)
+            # print(inputs, outputs)
+
+            for s in readable:
+                if s is self.sock:
+                    client, address = self.sock.accept()
+                    self.inputs.append(client)
+                    # print("connection from:", address)
+                    client.settimeout(60)
+                    client.setblocking(0)
+                    self.message_queues[client] = queue.Queue()
                 else:
-                    # Someone sent us something! Let's receive it.
-                    try:
-                        data = sock.recv(self.recv_bytes)
-                    except socket.error as e:
-                        if e.errno is errno.ECONNRESET:
-                            # Consider 'Connection reset by peer'
-                            # the same as reading zero bytes
-                            data = None
-                        else:
-                            raise e
+                    data = s.recv(1024)
                     if data:
-                        # Call the callback
-                        self.callback(IPs[sock], queues[sock], data)
-                        # Put the client socket in writers so we can write to it
-                        # later.
-                        if sock not in writers:
-                            writers.append(sock)
-                    else:
-                        # We received zero bytes, so we should close the stream
-                        # Stop writing to it.
-                        if sock in writers:
-                            writers.remove(sock)
-                        # Stop reading from it.
-                        readers.remove(sock)
-                        # Close the connection.
-                        sock.close()
-                        # Destroy is queue
-                        del queues[sock]
-            # Deal with sockets that need to be written to.
-            for sock in write:
+                        print(data.decode('utf-8'))
+                        # A readable client socket has data
+                        # print("received " + data.decode('utf-8') + ' from ' +
+                        #   str(s.getpeername()[0]) + ':' + str(s.getpeername()[1]))
+                        if b'HELLO' in data:
+                            self.isClientConnected = True
+                            print("Hello Client at: " + str(s.getpeername()
+                                                            [0]) + ':' + str(s.getpeername()[1]))
+                        self.message_queues[s].put(data)
+
+                        if b'READY' in data:
+                            self.isClientReady = True
+                            print("Client at: " + str(s.getpeername()
+                                                      [0]) + ':' + str(s.getpeername()[1]) + " is ready")
+
+                        if b'GOODBYE' in data:
+                            print("Client at: " + str(s.getpeername()
+                                                      [0]) + ':' + str(s.getpeername()[1]) + " is disconnecting")
+                            self.isClientReady = False
+                            self.isClientConnected = False
+                            self.inputs.remove(s)
+                            self.outputs.remove(s)
+
+                        # Add output channel for response
+                        if s not in self.outputs:
+                            self.outputs.append(s)
+
+            for s in writeable:
+                # print("writeables:")
+                # print(writeable)
                 try:
-                    # Get the next chunk of data in the queue, but don't wait.
-                    data = queues[sock].get_nowait()
+                    next_msg = self.message_queues[s].get_nowait()
                 except queue.Empty:
-                    # The queue is empty -> nothing needs to be written.
-                    writers.remove(sock)
+                    pass
+                    # print(">>Output Queue is empty for")
+                    # print(s.getpeername())
+                    # self.outputs.remove(s)
                 else:
-                    # The queue wasn't empty; we did, in fact, get something.
-                    # So send it.
-                    sock.send(data)
-            # Deal with erroring sockets.
-            for sock in err:
-                # Remove the socket from every list.
-                readers.remove(sock)
-                if sock in writers:
-                    writers.remove(sock)
-                # Close the connection.
-                sock.close()
-                # Destroy its queue.
-                del queues[sock]
+                    # print("Sending: " + next_msg.decode('utf-8') +
+                    #       " to " + str(s.getpeername()[0]) + ':' + str(s.getpeername()[1]))
+                    totalsent = 0
+                    sizeObj = len(next_msg)
+                    print(self.isClientReady)
+                    while (totalsent < sizeObj and self.isClientReady and self.isClientConnected):
+                        sent = s.send(next_msg[totalsent:])
+                        # print(next_msg.decode('utf-8'))
+                        print(sent)
+                        s.send(b'\n')
+                        if sent == 0:
+                            raise RuntimeError('Socket is broke')
+                        totalsent += sent
+                    # print("sent msg")
+
+            for s in errored:
+                print('>>handling exceptional condition for')
+                print(s.getpeername())
+                self.inputs.remove(s)
+                if s in self.outputs:
+                    self.outputs.remove(s)
+                s.close()
+
+                del self.message_queues[s]
+
+    def appendToMessageBuff(self, data):
+        for s in self.outputs:
+            # print("appended to obuff for " + s.getpeername()[0])
+            self.message_queues[s].put(data)
+# example = ThreadingExample()
+# time.sleep(3)
+# print('Checkpoint')
+# time.sleep(2)
+# print('Bye')

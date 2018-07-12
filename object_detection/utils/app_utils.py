@@ -5,6 +5,7 @@ import six
 import collections
 import cv2
 import datetime
+import time
 from threading import Thread
 #from matplotlib import colors
 
@@ -46,14 +47,20 @@ class FPS:
 
 
 class WebcamVideoStream:
-    def __init__(self, src): #, width, height):
+    def __init__(self, src):  # , width, height):
         # initialize the video camera stream and read the first frame
         # from the stream
-        self.stream = cv2.VideoCapture(src, apiPreference=cv2.CAP_FFMPEG)
-        #self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-        #self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-        (self.grabbed, self.frame) = self.stream.read()
+        isConnected = False
 
+        while isConnected is False:
+            self.stream = cv2.VideoCapture(src, apiPreference=cv2.CAP_FFMPEG)
+            print("retrying...")
+            isConnected = self.stream.isOpened()
+            if isConnected == False:
+                time.sleep(0.5)
+            #self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+            #self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+        (self.grabbed, self.frame) = self.stream.read()
         # initialize the variable used to indicate if the thread should
         # be stopped
         self.stopped = False
