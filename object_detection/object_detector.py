@@ -5,18 +5,15 @@ import argparse
 import multiprocessing
 import numpy as np
 import tensorflow as tf
-import pickle
 from io import BytesIO
 import base64
-from utils.app_utils import FPS, WebcamVideoStream
+from utils.app_utils import WebcamVideoStream
 from multiprocessing import Queue, Pool
 from utils import label_map_util
-from utils.network_utils import ThreadingExample
+from utils.network_utils import ThreadedServer
 from utils import visualization_utils as vis_util
 import json
 CWD_PATH = os.getcwd()
-
-boxes_enc = b''
 
 # Use JIT Compilation to get speed up. Experimental feature.
 # config = tf.ConfigProto()
@@ -65,15 +62,15 @@ def detect_objects(image_np, sess, detection_graph):
     (boxes, scores, classes, num_detections) = sess.run(
         [boxes, scores, classes, num_detections], feed_dict={image_tensor: image_np_expanded})
 
-    # Visualization of the results of a detection.
-    vis_util.visualize_boxes_and_labels_on_image_array(
-        image_np,
-        np.squeeze(boxes),
-        np.squeeze(classes).astype(np.int32),
-        np.squeeze(scores),
-        category_index,
-        use_normalized_coordinates=True,
-        line_thickness=8, min_score_thresh=0.4)
+    # # Visualization of the results of a detection.
+    # vis_util.visualize_boxes_and_labels_on_image_array(
+    #     image_np,
+    #     np.squeeze(boxes),
+    #     np.squeeze(classes).astype(np.int32),
+    #     np.squeeze(scores),
+    #     category_index,
+    #     use_normalized_coordinates=True,
+    #     line_thickness=8, min_score_thresh=0.4)
 
     detection_dict = vis_util.create_detection_dict(
         np.squeeze(boxes),
@@ -93,12 +90,12 @@ def detect_objects(image_np, sess, detection_graph):
         detection_dict_annotated)
     # print("JSOND: ", detection_dict_json, type(detection_dict_json))
     # print(json.loads(detection_dict_json))
-    return image_np, detection_dict_json
+    return detection_dict_json
 
 
 def queryParser(ip, queue, data):
     print(data, "recieved from", ip)
-    # TODO Parse into string, look for isReady and start sending data.
+    # TODO: Parse into string, look for isReady and start sending data.
 
 
 def worker(input_q, output_q):
@@ -112,32 +109,34 @@ def worker(input_q, output_q):
             od_graph_def.ParseFromString(serialized_graph)
             tf.import_graph_def(od_graph_def, name='')
 
-        # , config=config) #config enable for JIT
-        sess = tf.Session(graph=detection_graph)
+        sess = tf.Session(graph=detection_graph) #config enable for JIT
 
-    fps = FPS().start()
     while True:
-        fps.update()
-        frame = input_q.get()
+        frame, start = input_q.get()
         # print(">Frame taken from input queue")
         # frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        output_q.put(detect_objects(frame, sess, detection_graph))
-    fps.stop()
+        output_q.put((detect_objects(frame, sess, detection_graph), start))
     sess.close()
 
 
-def getRTSPStream(isConnected):
+def getRTSPStream():
     while True:
-        print("trying to connect...")
-        if (isConnected):
-            return WebcamVideoStream(src=args.video_source).start(), FPS().start()
+        if (server.isClientConnected):
+            print('INPUTS:')
+            for s in server.inputs:
+                print(s.getsockname())
+            print('OUTPUTS:')
+            for s in server.outputs:
+                print(s.getpeername())
+            # TODO: This is only valid for single user case.
+            src = 'rtsp://'+ str(server.outputs[0].getpeername()[0]) + ':1234/h264'
+            ret = (WebcamVideoStream(src=src).start())
+            return ret
         time.sleep(0.5)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-src', '--source', dest='video_source',
-                        type=str, default='0', help='rstp://....')
     parser.add_argument('-nw', '--num-workers', dest='num_workers',
                         type=int, default=5, help='Number of workers.')
     parser.add_argument('-qs', '--queue-size', dest='queue_size',
@@ -147,53 +146,36 @@ if __name__ == '__main__':
     logger = multiprocessing.log_to_stderr()
     logger.setLevel(multiprocessing.SUBWARNING)
 
-    if(args.video_source == '0'):
-        print('please provide a valid addr')
-        exit
-
-    server = ThreadingExample('', 20004)
+    server = ThreadedServer('', 20004)
     input_q = Queue(maxsize=args.queue_size)
     output_q = Queue(maxsize=args.queue_size)
     pool = Pool(args.num_workers, worker, (input_q, output_q))
 
-    '''
-    setup rtsp client connection
-    '''
-    # video_capture, fps = getRTSPStream(server.isClientConnected, , fps)
-
     while True:
-        print("trying to connect...")
-        if (server.isClientConnected):
-            video_capture = WebcamVideoStream(
-                src=args.video_source).start()
-            fps = FPS().start()
+        try:
+            video_capture = getRTSPStream()
+            
+            while (server.isClientConnected and server.isClientReady):
+                frame = video_capture.read()
+                # Rotate incoming video stream, For debug only should be removed o/w
+                frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+                start = time.time()
+                input_q.put((frame, start))  # Add Frame to Queue
+                # output_rgb = cv2.cvtColor(output_q.get(), cv2.COLOR_RGB2BGR)
+                out, start = output_q.get()
+                end = time.time()
+                print("Frame processing time: " + str((end - start)) + " seconds.")
+                if (len(server.outputs) > 0):
+                    # out = out + "#END#"
+                    server.appendToMessageBuff(bytes((str((time.time()*1000)) + "#" + out), 'utf-8'))
+                    # TODO: add buffer control
+                else:
+                    print("no clients!")
+            
+            
+        except KeyboardInterrupt:
+            video_capture.stop()
+            pool.terminate()
             break
-        time.sleep(0.5)
+    
 
-    try:
-        while True:  # fps._numFrames < 120
-            frame = video_capture.read()
-            # Rotate incoming video stream, For debug only should be removed o/w
-            frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
-            input_q.put(frame)  # Add Frame to Queue
-            t = time.time()
-            # output_rgb = cv2.cvtColor(output_q.get(), cv2.COLOR_RGB2BGR)
-            frame_2, out = output_q.get()
-            if (len(server.outputs) > 0):
-                # out = out + "#END#"
-                server.appendToMessageBuff(bytes(out, 'utf-8'))
-
-                # add buffer control
-            else:
-                print("no clients!")
-
-    except KeyboardInterrupt:
-        fps.stop()
-
-    fps.stop()
-    video_capture.stop()
-    print('[INFO] elapsed time (total): {:.2f}'.format(fps.elapsed()))
-    print('[INFO] approx. FPS: {:.2f}'.format(fps.fps()))
-    pool.terminate()
-    video_capture.stop()
-    cv2.destroyAllWindows()

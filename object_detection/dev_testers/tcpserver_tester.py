@@ -1,9 +1,9 @@
 import socket
 import os
 import time
-from utils.network_utils import ThreadingExample
+from utils.network_utils import ThreadedServer
 
-server = ThreadingExample('', 20004)
+server = ThreadedServer('', 20004)
 
 try:
     while True:
