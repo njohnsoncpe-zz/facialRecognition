@@ -9,9 +9,10 @@ import time
 from threading import Thread
 #from matplotlib import colors
 
+#TODO: Verify Experimental Features
 # Force UDP Protocol for RTP Transport, this is needed to use the FFMPEG Backend for decoding the h264 stream.
 # If a "nonmatching server reply" error is thrown, then the GSTREAMER backend must be used (with over x10 latency) or FFMPEG must be built from source."
-os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"#,"fflags;nobuffer"
 
 
 class FPS:
@@ -54,6 +55,7 @@ class WebcamVideoStream:
 
         while isConnected is False:
             self.stream = cv2.VideoCapture(src, apiPreference=cv2.CAP_FFMPEG)
+            self.stream.set(cv2.CAP_PROP_BUFFERSIZE, 0)
             print("retrying...")
             isConnected = self.stream.isOpened()
             if isConnected == False:

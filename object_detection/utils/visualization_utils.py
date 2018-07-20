@@ -544,7 +544,7 @@ def create_detection_dict(
         keypoints=None,
         use_normalized_coordinates=False,
         max_boxes_to_draw=20,
-        min_score_thresh=.5,
+        min_score_thresh=.1,
         agnostic_mode=False,
         line_thickness=4,
         groundtruth_box_visualization_color='black',
@@ -594,13 +594,13 @@ def create_detection_dict(
 
     # Initialize detected_object
     detection_box = ObjDict()
-    detection_box.objects_present = collections.defaultdict(list)
+    # detection_box.objects_present = collections.defaultdict(list)
 
     box_to_display_str_map = collections.defaultdict(list)
-    box_to_color_map = collections.defaultdict(str)
-    box_to_instance_masks_map = {}
-    box_to_instance_boundaries_map = {}
-    box_to_keypoints_map = collections.defaultdict(list)
+    # box_to_color_map = collections.defaultdict(str)
+    # box_to_instance_masks_map = {}
+    # box_to_instance_boundaries_map = {}
+    # box_to_keypoints_map = collections.defaultdict(list)
 
     if not max_boxes_to_draw:
         max_boxes_to_draw = boxes.shape[0]
@@ -614,29 +614,29 @@ def create_detection_dict(
             #     box_to_instance_boundaries_map[box] = instance_boundaries[i]
             # if keypoints is not None:
             #     box_to_keypoints_map[box].extend(keypoints[i])
-            if scores is None:
-                box_to_color_map[box] = groundtruth_box_visualization_color
-            else:
-                display_str = ''
-                if not skip_labels:
-                    if not agnostic_mode:
-                        if classes[i] in category_index.keys():
-                            class_name = category_index[classes[i]]['name']
-                        else:
-                            class_name = 'N/A'
-                        display_str = str(class_name)
-                if not skip_scores:
-                    if not display_str:
-                        display_str = '{}%'.format(int(100*scores[i]))
+            # if scores is None:
+            #     box_to_color_map[box] = groundtruth_box_visualization_color
+            # else:
+            display_str = ''
+            if not skip_labels:
+                if not agnostic_mode:
+                    if classes[i] in category_index.keys():
+                        class_name = category_index[classes[i]]['name']
                     else:
-                        display_str = '{}: {}%'.format(
-                            display_str, int(100*scores[i]))
-                box_to_display_str_map[box].append(display_str)
-                if agnostic_mode:
-                    box_to_color_map[box] = 'DarkOrange'
+                        class_name = 'N/A'
+                    display_str = str(class_name)
+            if not skip_scores:
+                if not display_str:
+                    display_str = '{}%'.format(int(100*scores[i]))
                 else:
-                    box_to_color_map[box] = STANDARD_COLORS[
-                        classes[i] % len(STANDARD_COLORS)]
+                    display_str = '{}: {}%'.format(
+                        display_str, int(100*scores[i]))
+            box_to_display_str_map[box].append(display_str)
+            # if agnostic_mode:
+            #     box_to_color_map[box] = 'DarkOrange'
+            # else:
+            #     box_to_color_map[box] = STANDARD_COLORS[
+            #         classes[i] % len(STANDARD_COLORS)]
             # else:
             #     detected_object = ObjDict()
             #     detected_object.object_label = ''

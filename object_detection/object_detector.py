@@ -1,19 +1,24 @@
 import os
 import cv2
 import time
-import argparse
 import multiprocessing
 import numpy as np
 import tensorflow as tf
 from io import BytesIO
 import base64
+import argparse
 from utils.app_utils import WebcamVideoStream
 from multiprocessing import Queue, Pool
 from utils import label_map_util
 from utils.network_utils import ThreadedServer
 from utils import visualization_utils as vis_util
+from tensorflow.python.client import timeline
 import json
 CWD_PATH = os.getcwd()
+LOGDIR = '/tmp/tensorboard'
+
+options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+run_metadata = tf.RunMetadata()
 
 # Use JIT Compilation to get speed up. Experimental feature.
 # config = tf.ConfigProto()
@@ -21,7 +26,7 @@ CWD_PATH = os.getcwd()
 
 
 # Path to frozen detection graph. This is the actual model that is used for the object detection.
-MODEL_NAME = 'ssd_mobilenet_v1_coco_11_06_2017'
+MODEL_NAME = 'ssd_mobilenet_v1_0.75'
 PATH_TO_CKPT = os.path.join(CWD_PATH, MODEL_NAME, 'frozen_inference_graph.pb')
 
 # List of the strings that is used to add correct label for each box.
@@ -32,8 +37,7 @@ NUM_CLASSES = 90
 # Loading label map
 print(">Loading Label Map")
 label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
-categories = label_map_util.convert_label_map_to_categories(
-    label_map, max_num_classes=NUM_CLASSES, use_display_name=True)
+categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=NUM_CLASSES, use_display_name=True)
 category_index = label_map_util.create_category_index(categories)
 
 
@@ -51,6 +55,7 @@ def detect_objects(image_np, sess, detection_graph):
 
     # Each box represents a part of the image where a particular object was detected.
     boxes = detection_graph.get_tensor_by_name('detection_boxes:0')
+    # masks = detection_graph.get_tensor_by_name('detection_masks:0')
 
     # Each score represent how level of confidence for each of the objects.
     # Score is shown on the result image, together with the class label.
@@ -58,19 +63,18 @@ def detect_objects(image_np, sess, detection_graph):
     classes = detection_graph.get_tensor_by_name('detection_classes:0')
     num_detections = detection_graph.get_tensor_by_name('num_detections:0')
 
+
     # Actual detection.
     (boxes, scores, classes, num_detections) = sess.run(
-        [boxes, scores, classes, num_detections], feed_dict={image_tensor: image_np_expanded})
+        [boxes, scores, classes, num_detections], feed_dict={image_tensor: image_np_expanded}, options=options, run_metadata=run_metadata)
 
-    # # Visualization of the results of a detection.
-    # vis_util.visualize_boxes_and_labels_on_image_array(
-    #     image_np,
-    #     np.squeeze(boxes),
-    #     np.squeeze(classes).astype(np.int32),
-    #     np.squeeze(scores),
-    #     category_index,
-    #     use_normalized_coordinates=True,
-    #     line_thickness=8, min_score_thresh=0.4)
+    
+
+    # fetched_timeline = fetched_timeline = timeline.Timeline(run_metadata.step_stats)
+    # chrome_trace = fetched_timeline.generate_chrome_trace_format()
+    # with open('timelines/timeline_01_frame_%d.json' % time.time(), 'w') as f:
+    #     f.write(chrome_trace)
+    
 
     detection_dict = vis_util.create_detection_dict(
         np.squeeze(boxes),
@@ -78,25 +82,12 @@ def detect_objects(image_np, sess, detection_graph):
         np.squeeze(scores),
         category_index,
         use_normalized_coordinates=True,
-        line_thickness=8, min_score_thresh=0.4)
+        line_thickness=8, min_score_thresh=0.5)
 
-    # print("RAW: ", detection_dict)
     detection_dict_annotated = {}
-    detection_dict_annotated = [
-        {"object_location": i, "object_data": j} for i, j in detection_dict.items()]
-    # print("ANNOTATED: ", detection_dict_annotated,
-    #       type(detection_dict_annotated))
-    detection_dict_json = json.dumps(
-        detection_dict_annotated)
-    # print("JSOND: ", detection_dict_json, type(detection_dict_json))
-    # print(json.loads(detection_dict_json))
+    detection_dict_annotated = [{"object_location": i, "object_data": j} for i, j in detection_dict.items()]
+    detection_dict_json = json.dumps(detection_dict_annotated)
     return detection_dict_json
-
-
-def queryParser(ip, queue, data):
-    print(data, "recieved from", ip)
-    # TODO: Parse into string, look for isReady and start sending data.
-
 
 def worker(input_q, output_q):
     # Load a (frozen) Tensorflow model into memory.
@@ -113,8 +104,6 @@ def worker(input_q, output_q):
 
     while True:
         frame, start = input_q.get()
-        # print(">Frame taken from input queue")
-        # frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         output_q.put((detect_objects(frame, sess, detection_graph), start))
     sess.close()
 
@@ -151,6 +140,8 @@ if __name__ == '__main__':
     output_q = Queue(maxsize=args.queue_size)
     pool = Pool(args.num_workers, worker, (input_q, output_q))
 
+    oldData = ''
+
     while True:
         try:
             video_capture = getRTSPStream()
@@ -161,17 +152,16 @@ if __name__ == '__main__':
                 frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
                 start = time.time()
                 input_q.put((frame, start))  # Add Frame to Queue
-                # output_rgb = cv2.cvtColor(output_q.get(), cv2.COLOR_RGB2BGR)
                 out, start = output_q.get()
-                end = time.time()
-                print("Frame processing time: " + str((end - start)) + " seconds.")
-                if (len(server.outputs) > 0):
-                    # out = out + "#END#"
-                    server.appendToMessageBuff(bytes((str((time.time()*1000)) + "#" + out), 'utf-8'))
+                # end = t.time()
+                # print("Frame processing time: " + str((end - start)) + " seconds.")
+                if (len(server.outputs) > 0 and out != oldData):
+                    oldData = out
+                    server.appendToMessageBuff(bytes((str((time.time() * 1000)) + "#" + out), 'utf-8'))
                     # TODO: add buffer control
                 else:
-                    print("no clients!")
-            
+                    pass
+                    # print("no clients or frame data is identical and was not sent")
             
         except KeyboardInterrupt:
             video_capture.stop()
