@@ -31,3 +31,8 @@ object_detection/np_tester.py
 ../.vscode/.ropeproject/objectdb
 ../.vscode/.ropeproject/
 .vscode/.ropeproject/
+dev_testers/a.out
+dev_testers/cDevCapture.cpp
+dev_testers/json_tester.py
+dev_testers/objDict_tester.py
+dev_testers/tcpserver_tester.py
