@@ -97,3 +97,17 @@ protos/string_int_label_map_pb2.py
 protos/string_int_label_map.proto
 protos/train_pb2.py
 protos/train.proto
+tmplogs/tests
+utils/__pycache__/app_utils.cpython-35.pyc
+utils/__pycache__/app_utils.cpython-36.pyc
+utils/__pycache__/ffmpeg_python.cpython-36.pyc
+utils/__pycache__/__init__.cpython-35.pyc
+utils/__pycache__/__init__.cpython-36.pyc
+utils/__pycache__/label_map_util.cpython-35.pyc
+utils/__pycache__/label_map_util.cpython-36.pyc
+utils/__pycache__/network_utils.cpython-36.pyc
+utils/__pycache__/ops.cpython-35.pyc
+utils/__pycache__/shape_utils.cpython-35.pyc
+utils/__pycache__/static_shape.cpython-35.pyc
+utils/__pycache__/visualization_utils.cpython-35.pyc
+utils/__pycache__/visualization_utils.cpython-36.pyc
