@@ -1,6 +1,10 @@
+
 ## Facial Detection Over IP
+
+![forthebadge](https://forthebadge.com/images/badges/made-with-python.svg)
+
 The goal of this project is to detect Faces in live IP Camera footage. We use Tensorflow as our back end and build off of the
-SSD MobileNet Architecture. Versions using Inception V1/V2 are being explored for higher accuracy.
+SSD MobileNet Architecture. Versions using YOLOv3 and other Single Shot Detectors or Unified Detection Models are being explored for speed-accuracy trade-offs.
 
 [Video Exposition](https://youtu.be/-ED7T9X5zcY)
 
@@ -21,7 +25,7 @@ By taking this approach, we can allow users to explore image classification outp
 - [ ] Make Install Guide for Linux (CPU Only)
 - [X] Make Install Guide for Linux (GPU)
 - [ ] Reduce calls to frozen graph
-- [ ] Rebuild to utilize Intel MKL-DNN, AVX2, JIT
+- [X] Rebuild to utilize Intel MKL-DNN, AVX2, JIT
 - [ ] Extract frames from video at system edge
 - [ ] Apply Transfer Learning and train using [LFW Database](http://vis-www.cs.umass.edu/lfw/)
 
@@ -84,14 +88,34 @@ By taking this approach, we can allow users to explore image classification outp
   - Go take a walk because you're done and you deserve it.
   
   #### Linux
-  Coming soon. 
+  - Ensure you have the latest nvidia drivers, this can be determined using
+  ```Shell
+  nvidia-smi
+  ```
+  - Install Tensorflow-GPU
+  ```Shell
+  pip install tensorflow-gpu
+  ```
   
 ## Project Dependencies
 A full list of dependencies can be found in [env.yml](https://github.com/njohnsoncpe/facialRecognition/blob/master/env.yml). [Anaconda maintains](https://conda.io/docs/commands/env/conda-env-create.html) that an equivalent enviroment to mine can be built using: 
 ```
 conda env create -f env.yml -n tf-gpu 
 ```
+
 I have been unable to independenly verifiy this functionality. If anyone finds success with this method, let me know and I will update this to reflect any new information.
+
+## Troubleshooting 
+- If you get the following error:
+	```Shell
+	ModuleNotFoundError: No module named 'object_detection'
+	```
+- Go to the repo parent directory (it should contain a folder 'object_detection') and execute the following commands:
+	```Shell
+	cd path/to/parent/dir/
+	python setup.py setup
+	python setup.py install
+	```
 
 ## Credits
 Inspired by [TensorFlow Model Zoo](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md)
