@@ -26,8 +26,9 @@ run_metadata = tf.RunMetadata()
 
 
 # Path to frozen detection graph. This is the actual model that is used for the object detection.
+MODEL_DIR = 'frozen_models'
 MODEL_NAME = 'ssd_mobilenet_v1_0.75'
-PATH_TO_CKPT = os.path.join(CWD_PATH, MODEL_NAME, 'frozen_inference_graph.pb')
+PATH_TO_CKPT = os.path.join(CWD_PATH, MODEL_DIR, MODEL_NAME, 'frozen_inference_graph.pb')
 
 # List of the strings that is used to add correct label for each box.
 PATH_TO_LABELS = os.path.join(CWD_PATH, 'data', 'mscoco_label_map.pbtxt')
@@ -91,16 +92,18 @@ def detect_objects(image_np, sess, detection_graph):
 
 def worker(input_q, output_q):
     # Load a (frozen) Tensorflow model into memory.
-    print(">Loading Frozen Graph")
-    detection_graph = tf.Graph()
-    with detection_graph.as_default():
-        od_graph_def = tf.GraphDef()
-        with tf.gfile.FastGFile(PATH_TO_CKPT, 'rb') as fid:
-            serialized_graph = fid.read()
-            od_graph_def.ParseFromString(serialized_graph)
-            tf.import_graph_def(od_graph_def, name='')
+    # print(">Loading Frozen Graph")
+    # detection_graph = tf.Graph()
+    # with detection_graph.as_default():
+    #     od_graph_def = tf.GraphDef()
+    #     with tf.gfile.FastGFile(PATH_TO_CKPT, 'rb') as fid:
+    #         serialized_graph = fid.read()
+    #         od_graph_def.ParseFromString(serialized_graph)
+    #         tf.import_graph_def(od_graph_def, name='')
 
-        sess = tf.Session(graph=detection_graph) #config enable for JIT
+    #     sess = tf.Session(graph=detection_graph) #config enable for JIT
+
+    print('>Loading Traffic Recognition Model')
 
     while True:
         frame, start = input_q.get()
@@ -127,7 +130,7 @@ def getRTSPStream():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-nw', '--num-workers', dest='num_workers',
-                        type=int, default=5, help='Number of workers.')
+                        type=int, default=1, help='Number of workers.')
     parser.add_argument('-qs', '--queue-size', dest='queue_size',
                         type=int, default=10, help='Size of the queue.')
     args = parser.parse_args()
