@@ -14,10 +14,6 @@ By taking this approach, we can allow users to explore image classification outp
 
 ## To Do List
 - [ ] Incorporate American Standard Road Sign Detection
-- [ ] 
-- [ ] Rebuild to utilize Intel MKL-DNN, AVX2, JIT
-- [ ] Extract frames from video at system edge
-- [ ] Apply Transfer Learning and train using [LFW Database](http://vis-www.cs.umass.edu/lfw/)
 
 ## Environment Installation / Setup - TensorFlow CPU
 
@@ -78,8 +74,7 @@ By taking this approach, we can allow users to explore image classification outp
   - Go take a walk because you're done and you deserve it.
   
   #### Linux
-  - Install Anaconda
-  -  
+  Coming soon.
   
 ## Project Dependencies
 A full list of dependencies can be found in [env.yml](https://github.com/njohnsoncpe/facialRecognition/blob/master/env.yml). [Anaconda maintains](https://conda.io/docs/commands/env/conda-env-create.html) that an equivalent enviroment to mine can be built using: 
