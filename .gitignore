@@ -112,3 +112,6 @@ utils/__pycache__/static_shape.cpython-35.pyc
 utils/__pycache__/visualization_utils.cpython-35.pyc
 utils/__pycache__/visualization_utils.cpython-36.pyc
 mask_rcnn_inception_v2_coco_2018_01_28/
+.vscode
+.vscode/
+slim/nets/__pycache__
