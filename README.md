@@ -1,8 +1,4 @@
-## Facial Detection Over IP
-The goal of this project is to detect Faces in live IP Camera footage. We use Tensorflow as our back end and build off of the
-SSD MobileNet Architecture. Versions using Inception V1/V2 are being explored for higher accuracy.
-
-[Video Exposition](https://youtu.be/-ED7T9X5zcY)
+## Third-Eye: Passive Driver Assistance Through AR
 
 ## Motivation
 We take in a live video stream from a network connected camera and perform image classification on the frames of this video. This video is then sent over LAN to an embedded device for display purposes (i.e. ARM Processor).
@@ -15,12 +11,10 @@ By taking this approach, we can allow users to explore image classification outp
 - [TensorFlow](https://www.tensorflow.org/)
 - [OpenCV](https://opencv.org/)
 - [NVIDIA cuDNN](https://developer.nvidia.com/cudnn)
-- [COCO Dataset](http://cocodataset.org/)
 
 ## To Do List
-- [ ] Make Install Guide for Linux (CPU Only)
-- [X] Make Install Guide for Linux (GPU)
-- [ ] Reduce calls to frozen graph
+- [ ] Incorporate American Standard Road Sign Detection
+- [ ] 
 - [ ] Rebuild to utilize Intel MKL-DNN, AVX2, JIT
 - [ ] Extract frames from video at system edge
 - [ ] Apply Transfer Learning and train using [LFW Database](http://vis-www.cs.umass.edu/lfw/)
@@ -84,7 +78,8 @@ By taking this approach, we can allow users to explore image classification outp
   - Go take a walk because you're done and you deserve it.
   
   #### Linux
-  Coming soon. 
+  - Install Anaconda
+  -  
   
 ## Project Dependencies
 A full list of dependencies can be found in [env.yml](https://github.com/njohnsoncpe/facialRecognition/blob/master/env.yml). [Anaconda maintains](https://conda.io/docs/commands/env/conda-env-create.html) that an equivalent enviroment to mine can be built using: 
